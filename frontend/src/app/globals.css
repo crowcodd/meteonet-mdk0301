@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/*
+  скругления: панели 24px снаружи и 18px внутри, поля ввода 12px,
+  кнопки и бейджи полностью круглые. других радиусов в интерфейсе нет
+*/
+@theme {
+  --font-sans: var(--font-onest);
+  --font-mono: var(--font-geist-mono);
+
+  --color-canvas: #eceef1;
+  --color-shell: #e2e5e9;
+  --color-surface: #fbfbfc;
+  --color-ink: #15171c;
+  --color-ink-2: #474d58;
+  --color-ink-3: #69707c;
+  --color-line: rgb(21 23 28 / 0.09);
+
+  --color-accent: #2445b5;
+  --color-accent-strong: #1b3896;
+  --color-accent-soft: #e5eaf9;
+
+  --color-warn: #8f5208;
+  --color-warn-soft: #f8ecd8;
+  --color-bad: #a8202e;
+  --color-bad-soft: #f8e4e6;
+  --color-good: #1c6b44;
+  --color-good-soft: #e0f0e7;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-rise: rise 0.6s var(--ease-out-expo) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  @apply bg-canvas text-ink;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  @apply bg-accent-soft text-ink;
+}
