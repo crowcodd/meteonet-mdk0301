@@ -1,0 +1,6 @@
+{
+  "entryPoints": ["src/domain"],
+  "entryPointStrategy": "expand",
+  "out": "docs-api",
+  "name": "Meteonet — доменная модель"
+}

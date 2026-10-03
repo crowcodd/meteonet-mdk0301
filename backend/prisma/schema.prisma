@@ -1,0 +1,167 @@
+// в SQLite нет enum, поэтому статусы и типы лежат строками,
+// а какие значения допустимы, задают перечисления в src/domain/enums.ts
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+// адрес базы в Prisma 7 задаётся в prisma.config.ts
+datasource db {
+  provider = "sqlite"
+}
+
+model District {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  areaKm2  Float
+  stations Station[]
+}
+
+model Station {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique
+  name         String
+  type         String // StationType
+  latitude     Float
+  longitude    Float
+  districtId   Int
+  district     District      @relation(fields: [districtId], references: [id])
+  users        User[]
+  instruments  Instrument[]
+  measurements Measurement[]
+  failures     FailureLog[]
+}
+
+model User {
+  id               Int                   @id @default(autoincrement())
+  login            String                @unique
+  passwordHash     String
+  role             String // Role
+  fullName         String
+  contacts         String?
+  stationId        Int?
+  station          Station?              @relation(fields: [stationId], references: [id])
+  refreshTokenHash String?
+  createdAt        DateTime              @default(now())
+  revisions        MeasurementRevision[]
+  failures         FailureLog[]
+}
+
+model Parameter {
+  id                Int                   @id @default(autoincrement())
+  code              String                @unique
+  name              String
+  unit              String
+  minValue          Float
+  maxValue          Float
+  precision         Int // знаков после запятой
+  neighborTolerance Float // насколько можно отличаться от соседей и от своего ряда
+  instruments       InstrumentParameter[]
+  measurements      Measurement[]
+}
+
+model Instrument {
+  id                 Int                   @id @default(autoincrement())
+  name               String
+  model              String
+  stationId          Int
+  station            Station               @relation(fields: [stationId], references: [id])
+  role               String // InstrumentRole
+  state              String // InstrumentState
+  commissionedAt     DateTime
+  nextVerificationAt DateTime
+  parameters         InstrumentParameter[]
+  measurements       Measurement[]
+  failures           FailureLog[]          @relation("FailedInstrument")
+  reserveFor         FailureLog[]          @relation("ReserveInstrument")
+}
+
+model InstrumentParameter {
+  instrumentId Int
+  parameterId  Int
+  instrument   Instrument @relation(fields: [instrumentId], references: [id])
+  parameter    Parameter  @relation(fields: [parameterId], references: [id])
+
+  @@id([instrumentId, parameterId])
+}
+
+model Measurement {
+  id              Int                   @id @default(autoincrement())
+  stationId       Int
+  station         Station               @relation(fields: [stationId], references: [id])
+  parameterId     Int
+  parameter       Parameter             @relation(fields: [parameterId], references: [id])
+  instrumentId    Int
+  instrument      Instrument            @relation(fields: [instrumentId], references: [id])
+  observedAt      DateTime // срок наблюдения
+  receivedAt      DateTime              @default(now())
+  delayed         Boolean               @default(false)
+  status          String // MeasurementStatus
+  // копия значения последней ревизии, без неё выборки по соседям и истории были бы сильно сложнее
+  value           Float
+  currentRevision Int                   @default(1)
+  revisions       MeasurementRevision[]
+  checks          CheckResult[]
+
+  // если пакет отправят повторно, дублей не будет
+  @@unique([stationId, parameterId, observedAt])
+  @@index([parameterId, observedAt])
+}
+
+model MeasurementRevision {
+  id            Int         @id @default(autoincrement())
+  measurementId Int
+  measurement   Measurement @relation(fields: [measurementId], references: [id])
+  revision      Int
+  value         Float
+  reason        String?
+  authorId      Int
+  author        User        @relation(fields: [authorId], references: [id])
+  createdAt     DateTime    @default(now())
+
+  @@unique([measurementId, revision])
+}
+
+model CheckResult {
+  id             Int         @id @default(autoincrement())
+  measurementId  Int
+  measurement    Measurement @relation(fields: [measurementId], references: [id])
+  revision       Int
+  type           String // CheckType
+  verdict        String // Verdict
+  deviation      Float?
+  referenceValue Float?
+  note           String
+  createdAt      DateTime    @default(now())
+}
+
+model FailureLog {
+  id                  Int         @id @default(autoincrement())
+  instrumentId        Int
+  instrument          Instrument  @relation("FailedInstrument", fields: [instrumentId], references: [id])
+  stationId           Int
+  station             Station     @relation(fields: [stationId], references: [id])
+  reportedById        Int
+  reportedBy          User        @relation(fields: [reportedById], references: [id])
+  description         String
+  reserveInstrumentId Int?
+  reserveInstrument   Instrument? @relation("ReserveInstrument", fields: [reserveInstrumentId], references: [id])
+  openedAt            DateTime    @default(now())
+  closedAt            DateTime?
+}
+
+// журнал смены статусов замеров и состояний приборов
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  entity    String // "Measurement" | "Instrument"
+  entityId  Int
+  fromState String?
+  toState   String
+  actorId   Int?
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}

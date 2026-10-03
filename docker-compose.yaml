@@ -1,0 +1,38 @@
+name: meteonet
+
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: file:/app/data/meteonet.db
+      PORT: 3001
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?задайте JWT_ACCESS_SECRET в .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?задайте JWT_REFRESH_SECRET в .env}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      CORS_ORIGIN: http://localhost:${FRONTEND_PORT:-3000}
+      SEED_ON_START: ${SEED_ON_START:-true}
+    volumes:
+      - db-data:/app/data
+    ports:
+      # swagger будет на http://localhost:3001/docs
+      - "${BACKEND_PORT:-3001}:3001"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_ORIGIN: http://backend:3001
+    environment:
+      PORT: 3000
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db-data:

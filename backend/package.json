@@ -1,0 +1,36 @@
+{
+  "name": "meteonet-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/main.ts",
+    "start": "bun src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "bun --bun prisma generate",
+    "prisma:migrate": "bun --bun prisma migrate dev && bun --bun prisma generate",
+    "prisma:reset": "bun --bun prisma migrate reset --force",
+    "seed": "bun prisma/seed.ts",
+    "docs": "typedoc"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "@nestjs/common": "^12.1.1",
+    "@nestjs/core": "^12.1.1",
+    "@nestjs/jwt": "^12.0.2",
+    "@nestjs/platform-express": "^12.1.1",
+    "@nestjs/swagger": "^12.0.2",
+    "@prisma/adapter-libsql": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "prisma": "7.10.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "@types/express": "^5.0.6",
+    "typedoc": "^0.28.20",
+    "typescript": "^7.0.2"
+  }
+}
